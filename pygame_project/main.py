@@ -2,6 +2,9 @@ import pygame
 import os
 
 
+pygame.init()
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
