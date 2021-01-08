@@ -2,7 +2,9 @@ import pygame
 import os
 
 
+FPS = 50
 size = WIDTH, HEIGHT = 510, 390
+pygame.init()
 
 
 def load_image(name, colorkey=None):
@@ -45,15 +47,52 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('grass', x, y)
                 ball = Ball(x, y)
-    return ball
+    return ball, x, y
 
 
 class Field:
-    def __init__(self):
-        self.map = load_level('field.txt')
-        self.left = 0
-        self.top = 0
-        self.cell_size = 30
+    def __init__(self, width, height, x0=0, y0=0, cell_size=30, color=(255, 255, 255)):
+        self.field = [[0] * width for _ in range(height)]
+        self.width, self.height = width, height
+        self.left = x0
+        self.top = y0
+        self.cell_size = cell_size
+        self.color = color
+
+    def set_view(self, x0, y0, cell_size, color=(255, 255, 255)):
+        self.left = x0
+        self.top = y0
+        self.cell_size = cell_size
+        self.color = color
+
+    def render(self, screen):
+        for i in range(self.width):
+            for j in range(self.height):
+                if self.field[j][i]:
+                    color = (120, 120, 0)
+                else:
+                    color = (255, 255, 255)
+                pygame.draw.rect(screen, color, ((i * self.cell_size + self.left, j * self.cell_size + self.top),
+                                                      (self.cell_size, self.cell_size)), 1)
+
+    def get_cell(self, x, y):
+        if self.in_field(x, y):
+            x -= self.left
+            x = x // self.cell_size
+            y -= self.top
+            y = y // self.cell_size
+            return x, y
+        return None
+
+    def in_field(self, x, y):
+        if x < self.left or y < self.top or x > self.left + self.width * self.cell_size or \
+                                y > self.top + self.height * self.cell_size:
+            return False
+        return True
+
+    def on_click(self, mousepos):
+        i, j = self.get_cell(*mousepos)
+        self.field[j][i] = 1
 
 
 class Tile(pygame.sprite.Sprite):
@@ -67,14 +106,37 @@ class Tile(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(ball_group, all_sprites)
+        self.image = ball_image
+        self.rect = self.image.get_rect().move(
+            tile_width * x, tile_height * y)
 
 
 tile_width = tile_height = 50
 tile_images = {
-    'grass': load_image('grass.png'),
-    'gates': load_image('gates.png')
+    'grass': load_image('grass.png', -1),
+    'gates': load_image('gates.png', -1)
 }
-ball_image = load_image('ball.png')
+ball_image = load_image('ball.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
+
+
+if __name__ == '__main__':
+    screen = pygame.display.set_mode(size)
+    field = Field(11, 11)
+    running = True
+    level_map = load_level('field.txt')
+    ball, level_x, level_y = generate_level(load_level('field.txt'))
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                field.on_click(event.pos)
+        screen.fill((0, 0, 0))
+        tiles.draw(screen)
+        ball_group.draw(screen)
+        field.render(screen)
+        pygame.display.flip()
+    pygame.quit()
