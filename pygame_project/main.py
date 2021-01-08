@@ -2,6 +2,9 @@ import pygame
 import os
 
 
+size = WIDTH, HEIGHT = 510, 390
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
@@ -50,7 +53,7 @@ class Field:
         self.map = load_level('field.txt')
         self.left = 0
         self.top = 0
-        self.cell_size = 50
+        self.cell_size = 30
 
 
 class Tile(pygame.sprite.Sprite):
