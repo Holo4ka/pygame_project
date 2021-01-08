@@ -51,7 +51,7 @@ def generate_level(level):
 
 
 class Field:
-    def __init__(self, width, height, x0=0, y0=0, cell_size=30, color=(255, 255, 255)):
+    def __init__(self, width, height, x0=0, y0=30, cell_size=30, color=(255, 255, 255)):
         self.field = [[0] * width for _ in range(height)]
         self.width, self.height = width, height
         self.left = x0
@@ -109,9 +109,14 @@ class Ball(pygame.sprite.Sprite):
         self.image = ball_image
         self.rect = self.image.get_rect().move(
             tile_width * x, tile_height * y)
+        self.pos = x, y
+
+    def move(self, x, y):
+        self.pos = (x, y)
+        self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
 
 
-tile_width = tile_height = 50
+tile_width = tile_height = 30
 tile_images = {
     'grass': load_image('grass.png', -1),
     'gates': load_image('gates.png', -1)
@@ -122,7 +127,24 @@ tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
 
 
+def move_hero(ball, movement):
+    x, y = ball.pos
+    if movement == 'up':
+        if y > 0 and level_map[y - 1][x] in '@.':
+            ball.move(x, y - 1)
+    elif movement == 'down':
+        if y < len(level_map) - 1 and level_map[y + 1][x] in '@.':
+            ball.move(x, y + 1)
+    elif movement == 'left':
+        if x > 0 and level_map[y][x - 1] in '@.':
+            ball.move(x - 1, y)
+    elif movement == 'right':
+        if x < len(level_map[0]) - 1 and level_map[y][x + 1] in '@.':
+            ball.move(x + 1, y)
+
+
 if __name__ == '__main__':
+    clock = pygame.time.Clock()
     screen = pygame.display.set_mode(size)
     field = Field(11, 11)
     running = True
@@ -132,11 +154,23 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                field.on_click(event.pos)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    # player.rect.x -= tile_width
+                    move_hero(ball, 'left')
+                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    # player.rect.x += tile_width
+                    move_hero(ball, 'right')
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    # player.rect.y -= tile_height
+                    move_hero(ball, 'up')
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    # player.rect.y += tile_height
+                    move_hero(ball, 'down')
         screen.fill((0, 0, 0))
         tiles.draw(screen)
         ball_group.draw(screen)
+        clock.tick(FPS)
         field.render(screen)
         pygame.display.flip()
     pygame.quit()
