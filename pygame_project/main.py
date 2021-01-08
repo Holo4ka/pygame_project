@@ -37,7 +37,7 @@ def load_level(filename):
 
 
 def generate_level(level):
-    ball, x, y = None, None, None
+    ball, output_x, output_y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -47,12 +47,14 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('grass', x, y)
                 ball = Ball(x, y)
-    return ball, x, y
+                output_x, output_y = x, y
+    return ball, output_x, output_y
 
 
 class Field:
-    def __init__(self, width, height, x0=0, y0=30, cell_size=30, color=(255, 255, 255)):
+    def __init__(self, width, height, x, y, x0=0, y0=30, cell_size=30, color=(255, 255, 255)):
         self.field = [[0] * width for _ in range(height)]
+        self.field[y][x] = 1
         self.width, self.height = width, height
         self.left = x0
         self.top = y0
@@ -146,10 +148,10 @@ def move_hero(ball, movement):
 if __name__ == '__main__':
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode(size)
-    field = Field(11, 11)
     running = True
     level_map = load_level('field.txt')
-    ball, level_x, level_y = generate_level(load_level('field.txt'))
+    ball, ball_x, ball_y = generate_level(load_level('field.txt'))
+    field = Field(11, 11, ball_x, ball_y)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
