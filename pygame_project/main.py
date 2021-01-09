@@ -2,6 +2,8 @@ import pygame
 import os
 
 
+FPS = 50
+size = WIDTH, HEIGHT = 510, 390
 pygame.init()
 
 
@@ -35,7 +37,7 @@ def load_level(filename):
 
 
 def generate_level(level):
-    ball, x, y = None, None, None
+    ball, output_x, output_y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -45,15 +47,54 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('grass', x, y)
                 ball = Ball(x, y)
-    return ball
+                output_x, output_y = x, y
+    return ball, output_x, output_y
 
 
 class Field:
-    def __init__(self):
-        self.map = load_level('field.txt')
-        self.left = 0
-        self.top = 0
-        self.cell_size = 50
+    def __init__(self, width, height, x, y, x0=0, y0=30, cell_size=30, color=(255, 255, 255)):
+        self.field = [[0] * width for _ in range(height)]
+        self.field[y][x] = 1
+        self.width, self.height = width, height
+        self.left = x0
+        self.top = y0
+        self.cell_size = cell_size
+        self.color = color
+
+    def set_view(self, x0, y0, cell_size, color=(255, 255, 255)):
+        self.left = x0
+        self.top = y0
+        self.cell_size = cell_size
+        self.color = color
+
+    def render(self, screen):
+        for i in range(self.width):
+            for j in range(self.height):
+                if self.field[j][i]:
+                    color = (120, 120, 0)
+                else:
+                    color = (255, 255, 255)
+                pygame.draw.rect(screen, color, ((i * self.cell_size + self.left, j * self.cell_size + self.top),
+                                                      (self.cell_size, self.cell_size)), 1)
+
+    def get_cell(self, x, y):
+        if self.in_field(x, y):
+            x -= self.left
+            x = x // self.cell_size
+            y -= self.top
+            y = y // self.cell_size
+            return x, y
+        return None
+
+    def in_field(self, x, y):
+        if x < self.left or y < self.top or x > self.left + self.width * self.cell_size or \
+                                y > self.top + self.height * self.cell_size:
+            return False
+        return True
+
+    def on_click(self, mousepos):
+        i, j = self.get_cell(*mousepos)
+        self.field[j][i] = 1
 
 
 class Tile(pygame.sprite.Sprite):
@@ -67,14 +108,71 @@ class Tile(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(ball_group, all_sprites)
+        self.image = ball_image
+        self.rect = self.image.get_rect().move(
+            tile_width * x, tile_height * y)
+        self.pos = x, y
+
+    def move(self, x, y):
+        self.pos = (x, y)
+        self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
 
 
-tile_width = tile_height = 50
+tile_width = tile_height = 30
 tile_images = {
-    'grass': load_image('grass.png'),
-    'gates': load_image('gates.png')
+    'grass': load_image('grass.png', -1),
+    'gates': load_image('gates.png', -1)
 }
-ball_image = load_image('ball.png')
+ball_image = load_image('ball.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
+
+
+def move_hero(ball, movement):
+    x, y = ball.pos
+    if movement == 'up':
+        if y > 0 and level_map[y - 1][x] in '@.':
+            ball.move(x, y - 1)
+    elif movement == 'down':
+        if y < len(level_map) - 1 and level_map[y + 1][x] in '@.':
+            ball.move(x, y + 1)
+    elif movement == 'left':
+        if x > 0 and level_map[y][x - 1] in '@.':
+            ball.move(x - 1, y)
+    elif movement == 'right':
+        if x < len(level_map[0]) - 1 and level_map[y][x + 1] in '@.':
+            ball.move(x + 1, y)
+
+
+if __name__ == '__main__':
+    clock = pygame.time.Clock()
+    screen = pygame.display.set_mode(size)
+    running = True
+    level_map = load_level('field.txt')
+    ball, ball_x, ball_y = generate_level(load_level('field.txt'))
+    field = Field(11, 11, ball_x, ball_y)
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    # player.rect.x -= tile_width
+                    move_hero(ball, 'left')
+                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    # player.rect.x += tile_width
+                    move_hero(ball, 'right')
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    # player.rect.y -= tile_height
+                    move_hero(ball, 'up')
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    # player.rect.y += tile_height
+                    move_hero(ball, 'down')
+        screen.fill((0, 0, 0))
+        tiles.draw(screen)
+        ball_group.draw(screen)
+        clock.tick(FPS)
+        field.render(screen)
+        pygame.display.flip()
+    pygame.quit()
