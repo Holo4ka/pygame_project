@@ -117,23 +117,65 @@ class Ball(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
 
 
+class HoloBall(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(ball_group, all_sprites)
+        self.image = holoball_image
+        self.rect = self.image.get_rect().move(
+            tile_width * x, tile_height * y)
+        self.pos = x, y
+
+    def move(self, x, y):
+        self.pos = (x, y)
+        self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
+
+
 tile_width = tile_height = 30
 tile_images = {
     'grass': load_image('grass.png', -1),
     'gates': load_image('gates.png', -1)
 }
+holoball_image = load_image('holoball.png', -1)
 ball_image = load_image('ball.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
 
 
+def draw_lines(coords):
+    pass
+
+
 def check(ball, end_pos):
     x_0, y_0 = ball.pos
     x, y = end_pos
-    sx = abs(x - x_0)
-    sy = abs(y - y_0)
-    return sx <= 3 and sy <= 3
+    # sx = abs(x - x_0)
+    # sy = abs(y - y_0)
+    return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0
+
+
+def apply_movement(ball, surface):
+    holoball_group = pygame.sprite.Group()
+    x0, y0 = ball.pos
+    coords = []
+    count = 0
+    moving = True
+    while moving:
+        for mini_event in pygame.event.get():
+            if mini_event.type == pygame.MOUSEBUTTONDOWN:
+                if count < 3 and check(ball, mini_event.pos):
+                    tile = HoloBall(*mini_event.pos)
+                    coords.append(tile.pos)
+                    count += 1
+            if mini_event.type == pygame.K_KP_ENTER:
+                if x0 != coords[-1][0] or y0 != coords[-1][1]:
+                    moving = False
+        holoball_group.draw(surface)
+        ball_group.draw(surface)
+    draw_lines(coords)
+    ball.move(*coords[-1])
+    for sprite in holoball_group:
+        holoball_group.remove(sprite)
 
 
 if __name__ == '__main__':
@@ -147,12 +189,12 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                end_pos = field.get_cell(*event.pos)
-                movement_avaliable = check(ball, end_pos)
-                if movement_avaliable:
-                    x, y = end_pos
-                    ball.move(x, y + 1)
+            # if event.type == pygame.MOUSEBUTTONDOWN:
+            #     end_pos = field.get_cell(*event.pos)
+            #     movement_avaliable = check(ball, end_pos)
+            #     if movement_avaliable:
+            #         apply_movement(ball, *event.pos)
+        apply_movement(ball, screen)
         screen.fill((0, 0, 0))
         tiles.draw(screen)
         ball_group.draw(screen)
