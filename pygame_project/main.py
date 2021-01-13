@@ -208,7 +208,6 @@ if __name__ == '__main__':
                 if event.key == pygame.K_RETURN:
                     if x0 != coords[-1][0] or y0 != coords[-1][1]:
                         moving = False
-                        coords.clear()
                         count = 0
         draw_lines(coords)
         screen.fill((0, 0, 0))
@@ -218,6 +217,9 @@ if __name__ == '__main__':
         else:
             if coords:
                 ball.move(*field.get_cell(*coords[-1]))
+                coords.clear()
+                for sprite in holoball_group:
+                    holoball_group.remove(sprite)
         ball_group.draw(screen)
         clock.tick(FPS)
         field.render(screen)
