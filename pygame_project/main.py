@@ -119,7 +119,7 @@ class Ball(pygame.sprite.Sprite):
 
 class HoloBall(pygame.sprite.Sprite):
     def __init__(self, x, y):
-        super().__init__(ball_group, all_sprites)
+        super().__init__(holoball_group, all_sprites)
         self.image = holoball_image
         self.rect = self.image.get_rect().move(
             tile_width * x, tile_height * y)
@@ -133,49 +133,50 @@ class HoloBall(pygame.sprite.Sprite):
 tile_width = tile_height = 30
 tile_images = {
     'grass': load_image('grass.png', -1),
-    'gates': load_image('gates.png', -1)
+    'gates': load_image('gates.png', -1),
+    'holoball': load_image('holoball.png', -1)
 }
 holoball_image = load_image('holoball.png', -1)
 ball_image = load_image('ball.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
+holoball_group = pygame.sprite.Group()
 
 
 def draw_lines(coords):
     pass
 
 
-def check(ball, end_pos):
-    x_0, y_0 = ball.pos
-    x, y = end_pos
+def check(x_0, y_0, end_pos, field):
+    x, y = field.get_cell(*end_pos)
+    y += 1
     # sx = abs(x - x_0)
     # sy = abs(y - y_0)
-    return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0
+    return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0 + 1
 
 
-def apply_movement(ball, surface):
-    holoball_group = pygame.sprite.Group()
-    x0, y0 = ball.pos
-    coords = []
-    count = 0
-    moving = True
-    while moving:
-        for mini_event in pygame.event.get():
-            if mini_event.type == pygame.MOUSEBUTTONDOWN:
-                if count < 3 and check(ball, mini_event.pos):
-                    tile = HoloBall(*mini_event.pos)
-                    coords.append(tile.pos)
-                    count += 1
-            if mini_event.type == pygame.K_KP_ENTER:
-                if x0 != coords[-1][0] or y0 != coords[-1][1]:
-                    moving = False
-        holoball_group.draw(surface)
-        ball_group.draw(surface)
-    draw_lines(coords)
-    ball.move(*coords[-1])
-    for sprite in holoball_group:
-        holoball_group.remove(sprite)
+# def apply_movement(ball, surface):
+#     x0, y0 = ball.pos
+#     coords = []
+#     count = 0
+#     moving = True
+#     while moving:
+#         for mini_event in pygame.event.get():
+#             if mini_event.type == pygame.MOUSEBUTTONDOWN:
+#                 if count < 3 and check(ball, mini_event.pos):
+#                     tile = HoloBall(*mini_event.pos)
+#                     coords.append(tile.pos)
+#                     count += 1
+#             if mini_event.type == pygame.K_KP_ENTER:
+#                 if x0 != coords[-1][0] or y0 != coords[-1][1]:
+#                     moving = False
+#         holoball_group.draw(surface)
+#         ball_group.draw(surface)
+#     draw_lines(coords)
+#     ball.move(*coords[-1])
+#     for sprite in holoball_group:
+#         holoball_group.remove(sprite)
 
 
 if __name__ == '__main__':
@@ -185,18 +186,38 @@ if __name__ == '__main__':
     level_map = load_level('field.txt')
     ball, ball_x, ball_y = generate_level(load_level('field.txt'))
     field = Field(11, 11, ball_x, ball_y)
+    x0, y0 = ball.pos
+    coords = []
+    count = 0
+    moving = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            # if event.type == pygame.MOUSEBUTTONDOWN:
-            #     end_pos = field.get_cell(*event.pos)
-            #     movement_avaliable = check(ball, end_pos)
-            #     if movement_avaliable:
-            #         apply_movement(ball, *event.pos)
-        apply_movement(ball, screen)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.pos not in coords:
+                    moving = True
+                    x, y = field.get_cell(*event.pos)
+                    movement_avaliable = check(x0, y0, event.pos, field) and count < 3
+                    if movement_avaliable:
+                        HoloBall(x, y + 1)
+                        x0, y0 = x, y + 1
+                        coords.append(event.pos)
+                        count += 1
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if x0 != coords[-1][0] or y0 != coords[-1][1]:
+                        moving = False
+                        coords.clear()
+                        count = 0
+        draw_lines(coords)
         screen.fill((0, 0, 0))
         tiles.draw(screen)
+        if moving:
+            holoball_group.draw(screen)
+        else:
+            if coords:
+                ball.move(*field.get_cell(*coords[-1]))
         ball_group.draw(screen)
         clock.tick(FPS)
         field.render(screen)
