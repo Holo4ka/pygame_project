@@ -186,7 +186,7 @@ if __name__ == '__main__':
     level_map = load_level('field.txt')
     ball, ball_x, ball_y = generate_level(load_level('field.txt'))
     field = Field(11, 11, ball_x, ball_y)
-    x0, y0 = ball.pos
+    y0, x0 = ball.pos
     coords = []
     count = 0
     moving = True
@@ -206,7 +206,8 @@ if __name__ == '__main__':
                         count += 1
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    if x0 != coords[-1][0] or y0 != coords[-1][1]:
+                    x1, y1 = field.get_cell(*coords[-1])
+                    if x0 != x1 or y0 != y1:
                         moving = False
                         count = 0
         draw_lines(coords)
@@ -216,7 +217,8 @@ if __name__ == '__main__':
             holoball_group.draw(screen)
         else:
             if coords:
-                ball.move(*field.get_cell(*coords[-1]))
+                x, y = field.get_cell(*coords[-1])
+                ball.move(x, y + 1)
                 coords.clear()
                 for sprite in holoball_group:
                     holoball_group.remove(sprite)
