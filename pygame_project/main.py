@@ -72,7 +72,7 @@ class Field:
                 if not self.field[j][i]:
                     color = (255, 255, 255)
                 else:
-                    color = (255, 0, 0)
+                    color = (0, 0, 0)
                 pygame.draw.rect(screen, color, ((i * self.cell_size + self.left, j * self.cell_size + self.top),
                                                       (self.cell_size, self.cell_size)), 1)
 
@@ -91,8 +91,8 @@ class Field:
             return False
         return True
 
-    def on_click(self, mousepos):
-        i, j = self.get_cell(*mousepos)
+    def on_click(self, coord):
+        i, j = self.get_cell(*coord)
         self.field[j][i] = 1
 
 
@@ -151,32 +151,7 @@ def draw_lines(coords):
 def check(x_0, y_0, end_pos, field):
     x, y = field.get_cell(*end_pos)
     y += 1
-    # sx = abs(x - x_0)
-    # sy = abs(y - y_0)
     return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0 + 1
-
-
-# def apply_movement(ball, surface):
-#     x0, y0 = ball.pos
-#     coords = []
-#     count = 0
-#     moving = True
-#     while moving:
-#         for mini_event in pygame.event.get():
-#             if mini_event.type == pygame.MOUSEBUTTONDOWN:
-#                 if count < 3 and check(ball, mini_event.pos):
-#                     tile = HoloBall(*mini_event.pos)
-#                     coords.append(tile.pos)
-#                     count += 1
-#             if mini_event.type == pygame.K_KP_ENTER:
-#                 if x0 != coords[-1][0] or y0 != coords[-1][1]:
-#                     moving = False
-#         holoball_group.draw(surface)
-#         ball_group.draw(surface)
-#     draw_lines(coords)
-#     ball.move(*coords[-1])
-#     for sprite in holoball_group:
-#         holoball_group.remove(sprite)
 
 
 if __name__ == '__main__':
@@ -219,6 +194,8 @@ if __name__ == '__main__':
             if coords:
                 x, y = field.get_cell(*coords[-1])
                 ball.move(x, y + 1)
+                for coord in coords:
+                    field.on_click(coord)
                 coords.clear()
                 for sprite in holoball_group:
                     holoball_group.remove(sprite)
