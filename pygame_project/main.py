@@ -1,10 +1,18 @@
 import pygame
 import os
-
+import sys
 
 FPS = 50
-size = WIDTH, HEIGHT = 510, 390
+SIZE = WIDTH, HEIGHT = 510, 390
+
+screen = pygame.display.set_mode(SIZE)
+clock = pygame.time.Clock()
 pygame.init()
+
+
+def terminate():
+    pygame.quit()
+    sys.exit()
 
 
 def load_image(name, colorkey=None):
@@ -49,6 +57,26 @@ def generate_level(level):
                 ball = Ball(x, y)
                 output_x, output_y = x, y
     return ball, output_x, output_y
+
+
+def rules_screen():
+    pass
+
+
+def start_screen():
+    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if 302 <= event.pos[0] <= 421 and 287 <= event.pos[1] <= 325:
+                    return
+                elif 302 <= event.pos[0] <= 421 and 336 <= event.pos[1] <= 374:
+                    rules_screen()
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
 class Field:
@@ -121,7 +149,7 @@ class Tile(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(ball_group, all_sprites)
-        self.default_x, self.default_y = 5, 6
+        self.default_pos = self.default_x, self.default_y = x, y
         self.image = ball_image
         self.rect = self.image.get_rect().move(
             tile_width * x, tile_height * y)
@@ -145,6 +173,19 @@ class HoloBall(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
 
 
+class Score(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(tiles, all_sprites)
+        self.image = score_image
+        self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
+
+
+class ToMainMenu(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(tiles, all_sprites)
+        self.image = main_menu_image
+        self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
+
 class Cross(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(cross_group, all_sprites)
@@ -161,8 +202,10 @@ tile_images = {
     'gates': load_image('gates.png', -1),
     'cross': load_image('cross.png', -1)
 }
-holoball_image = load_image('holoball.png', -1)
 ball_image = load_image('ball.png', -1)
+holoball_image = load_image('holoball.png', -1)
+score_image = load_image('score.png', -1)
+main_menu_image = load_image('to_main_menu.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
