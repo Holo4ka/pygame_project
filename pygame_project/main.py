@@ -1,9 +1,11 @@
 import pygame
 import os
 import sys
+import random
 
 FPS = 50
 SIZE = WIDTH, HEIGHT = 510, 390
+GRAVITY = 0.5
 
 screen = pygame.display.set_mode(SIZE)
 clock = pygame.time.Clock()
@@ -60,10 +62,42 @@ def generate_level(level):
 
 
 def rules_screen():
-    pass
+    pygame.display.set_caption('Футбольчик. Правила')
+    rules_text = ['Правила (Нажмите на любую клавишу, чтобы вернуться в главное меню):',
+                  'Игроки по очереди "пинают" мяч. Номер игрока, который делает ход,',
+                  'можно определить по надписи в правой части экрана.',
+                  'Цель игры - довести мяч до ворот (любых) и забить гол.',
+                  'Мяч может ходить вокруг себя на одну клетку.',
+                  'Игрок может сделать три перемещения за один ход.',
+                  'Перемещение определяется нажатием мыши на клетку поля,',
+                  'ход - нажатием клавиши ENTER.',
+                  'Когда игрок сделал ход, все его перемещения помечаются крестиками -',
+                  'это значит, что на эти клетки ходить больше нельзя.',
+                  'Если мяч забит в ворота, гол засчитывается игроку, делавшему ход.']
+    font = pygame.font.Font(None, 20)
+    text_coord = 5
+    screen.fill((0, 0, 0))
+    for line in rules_text:
+        string_rendered = font.render(line, 1, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                start_screen()
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
 def start_screen():
+    pygame.display.set_caption('Футбольчик. Главное меню')
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     while True:
@@ -89,6 +123,50 @@ def whose_turn(is_player_1):
     screen.blit(turn, (turn_x, turn_y))
 
 
+screen_rect = (0, 0, WIDTH, HEIGHT)
+
+
+class Particle(pygame.sprite.Sprite):
+    star_images = [
+        load_image('red.png', -1),
+        load_image('orange.png', -1),
+        load_image('yellow.png', -1),
+        load_image('green.png', -1),
+        load_image('blue.png', -1),
+        load_image('purple.png', -1)
+    ]
+    fire = []
+    for scale in (10, 12, 14, 16, 18, 20):
+        random_star = random.choice(star_images)
+        fire.append(pygame.transform.scale(random_star, (scale, scale)))
+        star_images.remove(random_star)
+
+    def __init__(self, pos, dx, dy):
+        super().__init__(star_group, all_sprites)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+
+        self.velocity = [dx, dy]
+        self.rect.x, self.rect.y = pos
+
+        self.gravity = GRAVITY
+
+    def update(self):
+        self.velocity[1] += self.gravity
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
+
+def create_particles(position):
+    particle_count = 20
+    # возможные скорости
+    numbers = range(-5, 6)
+    for _ in range(particle_count):
+        Particle(position, random.choice(numbers), random.choice(numbers))
+
+
 class Field:
     def __init__(self, width, height, x, y, x0=0, y0=30, cell_size=30, color=(255, 255, 255)):
         self.field = [[0] * width for _ in range(height)]
@@ -112,7 +190,7 @@ class Field:
                 if self.field[j][i]:
                     Cross(i, j + 1)
                 pygame.draw.rect(screen, color, ((i * self.cell_size + self.left, j * self.cell_size + self.top),
-                                                      (self.cell_size, self.cell_size)), 1)
+                                                 (self.cell_size, self.cell_size)), 1)
 
     def get_cell(self, x, y):
         if self.in_field(x, y):
@@ -125,7 +203,7 @@ class Field:
 
     def in_field(self, x, y):
         if x < self.left or y < self.top or x > self.left + self.width * self.cell_size or \
-                                y > self.top + self.height * self.cell_size:
+                y > self.top + self.height * self.cell_size:
             return False
         return True
 
@@ -193,8 +271,8 @@ class Score(pygame.sprite.Sprite):
         font = pygame.font.Font(None, 60)
         score_1 = font.render(str(player_1), True, pygame.Color('yellow'))
         score_2 = font.render(str(player_2), True, pygame.Color('yellow'))
-        x_1, y_1 = self.rect.x + 18, self.rect.y + 13
-        x_2, y_2 = self.rect.x + 78, self.rect.y + 13
+        x_1, y_1 = self.rect.x + 78, self.rect.y + 13
+        x_2, y_2 = self.rect.x + 18, self.rect.y + 13
         screen.blit(score_1, (x_1, y_1))
         screen.blit(score_2, (x_2, y_2))
 
@@ -231,6 +309,7 @@ tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
 holoball_group = pygame.sprite.Group()
 cross_group = pygame.sprite.Group()
+star_group = pygame.sprite.Group()
 
 
 def check(x_0, y_0, x, y):
@@ -245,6 +324,7 @@ if __name__ == '__main__':
     running = True
     level_map = load_level('field.txt')
     ball, ball_x, ball_y = generate_level(load_level('field.txt'))
+    pygame.display.set_caption('Футбольчик')
     field = Field(11, 11, ball_x, ball_y)
     score = Score(12, 4)
     to_main_menu_btn = ToMainMenu(12, 1)
@@ -309,8 +389,9 @@ if __name__ == '__main__':
                             player_1_turn = True
                         count = 0
                     if goal:
+                        create_particles((x0 * tile_width + 15, y0 * tile_height + 15))
                         goal_confirmed = True
-        draw_lines(coords)
+        star_group.update()
         screen.fill((0, 0, 0))
         tiles.draw(screen)
         if moving:
@@ -321,7 +402,6 @@ if __name__ == '__main__':
                 ball.move(x, y + 1)
                 for coord in coords:
                     field.on_click(coord)
-                # coords.clear()
                 for sprite in holoball_group:
                     holoball_group.remove(sprite)
         if goal_confirmed:
@@ -340,6 +420,7 @@ if __name__ == '__main__':
         cross_group.draw(screen)
         ball_group.draw(screen)
         score.update(player_1, player_2)
+        star_group.draw(screen)
         clock.tick(FPS)
         field.render(screen)
         pygame.display.flip()
