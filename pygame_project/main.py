@@ -92,8 +92,13 @@ class Field:
         return True
 
     def on_click(self, coord):
-        i, j = self.get_cell(*coord)
+        i, j = coord
         self.field[j][i] = 1
+
+    def clear(self):
+        for i in range(self.width):
+            for j in range(self.height):
+                self.field[j][i] = 0
 
 
 class Tile(pygame.sprite.Sprite):
@@ -107,6 +112,7 @@ class Tile(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(ball_group, all_sprites)
+        self.default_x, self.default_y = 5, 6
         self.image = ball_image
         self.rect = self.image.get_rect().move(
             tile_width * x, tile_height * y)
@@ -148,8 +154,7 @@ def draw_lines(coords):
     pass
 
 
-def check(x_0, y_0, end_pos, field):
-    x, y = field.get_cell(*end_pos)
+def check(x_0, y_0, x, y):
     y += 1
     return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0 + 1
 
@@ -161,7 +166,8 @@ if __name__ == '__main__':
     level_map = load_level('field.txt')
     ball, ball_x, ball_y = generate_level(load_level('field.txt'))
     field = Field(11, 11, ball_x, ball_y)
-    y0, x0 = ball.pos
+    x0, y0 = ball.pos
+    # print(x0, y0)
     coords = []
     count = 0
     moving = True
@@ -170,18 +176,29 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.pos not in coords:
-                    moving = True
+                if not field.in_field(*event.pos):
+                    x, y = event.pos
+                    upper_gates = 91 <= x <= 240 and 0 <= y <= 30
+                    lower_gates = 91 <= x <= 240 and 361 <= y <= 390
+                    if upper_gates or lower_gates:
+                        ball.move(ball.default_x, ball.default_y)
+                        field.clear()
+                        coords.clear()
+                        for sprite in holoball_group:
+                            holoball_group.remove(sprite)
+                else:
                     x, y = field.get_cell(*event.pos)
-                    movement_avaliable = check(x0, y0, event.pos, field) and count < 3
-                    if movement_avaliable:
-                        HoloBall(x, y + 1)
-                        x0, y0 = x, y + 1
-                        coords.append(event.pos)
-                        count += 1
+                    if (x, y) not in coords:
+                        moving = True
+                        movement_avaliable = check(x0, y0, x, y) and count < 3
+                        if movement_avaliable:
+                            HoloBall(x, y + 1)
+                            x0, y0 = x, y + 1
+                            coords.append((x, y))
+                            count += 1
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    x1, y1 = field.get_cell(*coords[-1])
+                    x1, y1 = coords[-1]
                     if x0 != x1 or y0 != y1:
                         moving = False
                         count = 0
@@ -192,7 +209,7 @@ if __name__ == '__main__':
             holoball_group.draw(screen)
         else:
             if coords:
-                x, y = field.get_cell(*coords[-1])
+                x, y = coords[-1]
                 ball.move(x, y + 1)
                 for coord in coords:
                     field.on_click(coord)
