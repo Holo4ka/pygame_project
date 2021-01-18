@@ -79,6 +79,16 @@ def start_screen():
         clock.tick(FPS)
 
 
+def whose_turn(is_player_1):
+    font = pygame.font.Font(None, 30)
+    if is_player_1:
+        turn = font.render('Ход игрока 1', True, pygame.Color('yellow'))
+    else:
+        turn = font.render('Ход игрока 2', True, pygame.Color('yellow'))
+    turn_x, turn_y = tile_width * 12, tile_width * 8
+    screen.blit(turn, (turn_x, turn_y))
+
+
 class Field:
     def __init__(self, width, height, x, y, x0=0, y0=30, cell_size=30, color=(255, 255, 255)):
         self.field = [[0] * width for _ in range(height)]
@@ -152,7 +162,7 @@ class Ball(pygame.sprite.Sprite):
         self.default_pos = self.default_x, self.default_y = x, y
         self.image = ball_image
         self.rect = self.image.get_rect().move(
-            tile_width * x, tile_height * y)
+            tile_width * x + 1.5, tile_height * y + 1.5)
         self.pos = x, y
 
     def move(self, x, y):
@@ -165,7 +175,7 @@ class HoloBall(pygame.sprite.Sprite):
         super().__init__(holoball_group, all_sprites)
         self.image = holoball_image
         self.rect = self.image.get_rect().move(
-            tile_width * x, tile_height * y)
+            tile_width * x + 1.5, tile_height * y + 1.5)
         self.pos = x, y
 
     def move(self, x, y):
@@ -179,12 +189,22 @@ class Score(pygame.sprite.Sprite):
         self.image = score_image
         self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
 
+    def update(self, player_1, player_2):
+        font = pygame.font.Font(None, 60)
+        score_1 = font.render(str(player_1), True, pygame.Color('yellow'))
+        score_2 = font.render(str(player_2), True, pygame.Color('yellow'))
+        x_1, y_1 = self.rect.x + 18, self.rect.y + 13
+        x_2, y_2 = self.rect.x + 78, self.rect.y + 13
+        screen.blit(score_1, (x_1, y_1))
+        screen.blit(score_2, (x_2, y_2))
+
 
 class ToMainMenu(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(tiles, all_sprites)
         self.image = main_menu_image
         self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
+
 
 class Cross(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -213,28 +233,29 @@ holoball_group = pygame.sprite.Group()
 cross_group = pygame.sprite.Group()
 
 
-def draw_lines(coords):
-    pass
-
-
 def check(x_0, y_0, x, y):
     y += 1
     return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0 + 1
 
 
 if __name__ == '__main__':
+    start_screen()
     clock = pygame.time.Clock()
-    screen = pygame.display.set_mode(size)
+    screen = pygame.display.set_mode(SIZE)
     running = True
     level_map = load_level('field.txt')
     ball, ball_x, ball_y = generate_level(load_level('field.txt'))
     field = Field(11, 11, ball_x, ball_y)
-    x0, y0 = ball.pos
+    score = Score(12, 4)
+    to_main_menu_btn = ToMainMenu(12, 1)
+    x0, y0 = ball.default_pos
     goal = False
     goal_confirmed = False
+    player_1_turn = True
     coords = []
     count = 0
     moving = True
+    player_1, player_2 = 0, 0
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -254,6 +275,19 @@ if __name__ == '__main__':
                         HoloBall(x, 12)
                         count = 4
                         goal = True
+                    else:
+                        if 360 <= x <= 480 and 30 <= y <= 90:
+                            x0, y0 = ball.default_pos
+                            ball.move(x0, y0)
+                            goal = False
+                            goal_confirmed = False
+                            player_1_turn = True
+                            coords = []
+                            count = 0
+                            moving = True
+                            player_1, player_2 = 0, 0
+                            field.clear()
+                            start_screen()
                 else:
                     x, y = field.get_cell(*event.pos)
                     if (x, y) not in coords:
@@ -269,6 +303,10 @@ if __name__ == '__main__':
                     x1, y1 = coords[-1]
                     if x0 != x1 or y0 != y1:
                         moving = False
+                        if player_1_turn:
+                            player_1_turn = False
+                        else:
+                            player_1_turn = True
                         count = 0
                     if goal:
                         goal_confirmed = True
@@ -287,6 +325,10 @@ if __name__ == '__main__':
                 for sprite in holoball_group:
                     holoball_group.remove(sprite)
         if goal_confirmed:
+            if player_1_turn:
+                player_1 += 1
+            else:
+                player_2 += 1
             field.clear()
             ball.move(ball.default_x, ball.default_y)
             coords.clear()
@@ -294,8 +336,10 @@ if __name__ == '__main__':
             x0, y0 = ball.default_x, ball.default_y
             field.field[5][5] = 1
             goal, goal_confirmed = False, False
+        whose_turn(player_1_turn)
         cross_group.draw(screen)
         ball_group.draw(screen)
+        score.update(player_1, player_2)
         clock.tick(FPS)
         field.render(screen)
         pygame.display.flip()
