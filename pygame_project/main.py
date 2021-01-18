@@ -132,15 +132,42 @@ class Tile(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__(ball_group, all_sprites)
+        self.default_pos = self.default_x, self.default_y = x, y
         self.image = ball_image
         self.rect = self.image.get_rect().move(
-            tile_width * x + 1.5, tile_height * y + 1.5)
+            tile_width * x, tile_height * y)
         self.pos = x, y
-        self.default_pos = x, y
 
     def move(self, x, y):
         self.pos = (x, y)
         self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
+
+
+class HoloBall(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(holoball_group, all_sprites)
+        self.image = holoball_image
+        self.rect = self.image.get_rect().move(
+            tile_width * x, tile_height * y)
+        self.pos = x, y
+
+    def move(self, x, y):
+        self.pos = (x, y)
+        self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
+
+
+class Score(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(tiles, all_sprites)
+        self.image = score_image
+        self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
+
+
+class ToMainMenu(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(tiles, all_sprites)
+        self.image = main_menu_image
+        self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
 
 
 tile_width = tile_height = 30
@@ -149,9 +176,18 @@ tile_images = {
     'gates': load_image('gates.png', -1)
 }
 ball_image = load_image('ball.png', -1)
+holoball_image = load_image('holoball.png', -1)
+score_image = load_image('score.png', -1)
+main_menu_image = load_image('to_main_menu.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
+holoball_group = pygame.sprite.Group()
+
+
+def check(x_0, y_0, x, y):
+    y += 1
+    return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0 + 1
 
 
 def move_hero(field, ball, movement):
@@ -170,6 +206,9 @@ if __name__ == '__main__':
     level_map = load_level('field.txt')
     ball, ball_x, ball_y = generate_level(level_map)
     field = Field(11, 11, ball_x, ball_y)
+    score = Score(12, 4)
+    to_main_menu = ToMainMenu(12, 1)
+    is_player_1 = True
     player_1, player_2 = 0, 0
     while running:
         for event in pygame.event.get():
