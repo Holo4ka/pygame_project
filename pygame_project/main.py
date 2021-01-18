@@ -201,9 +201,15 @@ if __name__ == '__main__':
                     x, y = event.pos
                     upper_gates = 91 <= x <= 240 and 0 <= y <= 30
                     lower_gates = 91 <= x <= 240 and 361 <= y <= 390
-                    if upper_gates or lower_gates:
+                    if upper_gates and count < 3:
                         x = field.get_x(x)
                         HoloBall(x, 0)
+                        count = 4
+                        goal = True
+                    elif lower_gates and count < 3:
+                        x = field.get_x(x)
+                        HoloBall(x, 12)
+                        count = 4
                         goal = True
                 else:
                     x, y = field.get_cell(*event.pos)
@@ -240,6 +246,11 @@ if __name__ == '__main__':
         if goal_confirmed:
             field.clear()
             ball.move(ball.default_x, ball.default_y)
+            coords.clear()
+            count = 0
+            x0, y0 = ball.default_x, ball.default_y
+            field.field[5][5] = 1
+            goal, goal_confirmed = False, False
         cross_group.draw(screen)
         ball_group.draw(screen)
         clock.tick(FPS)
