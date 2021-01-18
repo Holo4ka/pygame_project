@@ -59,6 +59,7 @@ class Field:
         self.top = y0
         self.cell_size = cell_size
         self.color = color
+        self.field[5][5] = 1
 
     def set_view(self, x0, y0, cell_size, color=(255, 255, 255)):
         self.left = x0
@@ -69,10 +70,9 @@ class Field:
     def render(self, screen):
         for i in range(self.width):
             for j in range(self.height):
-                if not self.field[j][i]:
-                    color = (255, 255, 255)
-                else:
-                    color = (0, 0, 0)
+                color = (255, 255, 255)
+                if self.field[j][i]:
+                    Cross(i, j + 1)
                 pygame.draw.rect(screen, color, ((i * self.cell_size + self.left, j * self.cell_size + self.top),
                                                       (self.cell_size, self.cell_size)), 1)
 
@@ -99,6 +99,10 @@ class Field:
         for i in range(self.width):
             for j in range(self.height):
                 self.field[j][i] = 0
+        for sprite in holoball_group:
+            holoball_group.remove(sprite)
+        for sprite in cross_group:
+            cross_group.remove(sprite)
 
 
 class Tile(pygame.sprite.Sprite):
@@ -136,11 +140,21 @@ class HoloBall(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 1.5, tile_height * y + 1.5)
 
 
+class Cross(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__(cross_group, all_sprites)
+        self.image = tile_images['cross']
+        self.x = x
+        self.y = y
+        self.rect = self.image.get_rect().move(
+            tile_width * x + 1.5, tile_height * y + 1.5)
+
+
 tile_width = tile_height = 30
 tile_images = {
     'grass': load_image('grass.png', -1),
     'gates': load_image('gates.png', -1),
-    'holoball': load_image('holoball.png', -1)
+    'cross': load_image('cross.png', -1)
 }
 holoball_image = load_image('holoball.png', -1)
 ball_image = load_image('ball.png', -1)
@@ -148,6 +162,7 @@ all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
 holoball_group = pygame.sprite.Group()
+cross_group = pygame.sprite.Group()
 
 
 def draw_lines(coords):
@@ -213,11 +228,13 @@ if __name__ == '__main__':
                 ball.move(x, y + 1)
                 for coord in coords:
                     field.on_click(coord)
-                coords.clear()
+                # coords.clear()
                 for sprite in holoball_group:
                     holoball_group.remove(sprite)
+        cross_group.draw(screen)
         ball_group.draw(screen)
         clock.tick(FPS)
         field.render(screen)
         pygame.display.flip()
     pygame.quit()
+print()
