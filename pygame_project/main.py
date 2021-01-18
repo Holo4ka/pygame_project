@@ -59,6 +59,10 @@ def generate_level(level):
     return ball, output_x, output_y
 
 
+def rules_screen():
+    pass
+
+
 def start_screen():
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
@@ -66,9 +70,11 @@ def start_screen():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if 302 <= event.pos[0] <= 421 and 287 <= event.pos[1] <= 325:
+                    return
+                elif 302 <= event.pos[0] <= 421 and 336 <= event.pos[1] <= 374:
+                    rules_screen()
         pygame.display.flip()
         clock.tick(FPS)
 
