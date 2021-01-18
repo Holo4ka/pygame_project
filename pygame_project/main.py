@@ -91,6 +91,11 @@ class Field:
             return False
         return True
 
+    def get_x(self, x):
+        x -= self.left
+        x = x // self.cell_size
+        return x
+
     def on_click(self, coord):
         i, j = coord
         self.field[j][i] = 1
@@ -182,7 +187,8 @@ if __name__ == '__main__':
     ball, ball_x, ball_y = generate_level(load_level('field.txt'))
     field = Field(11, 11, ball_x, ball_y)
     x0, y0 = ball.pos
-    # print(x0, y0)
+    goal = False
+    goal_confirmed = False
     coords = []
     count = 0
     moving = True
@@ -196,11 +202,9 @@ if __name__ == '__main__':
                     upper_gates = 91 <= x <= 240 and 0 <= y <= 30
                     lower_gates = 91 <= x <= 240 and 361 <= y <= 390
                     if upper_gates or lower_gates:
-                        ball.move(ball.default_x, ball.default_y)
-                        field.clear()
-                        coords.clear()
-                        for sprite in holoball_group:
-                            holoball_group.remove(sprite)
+                        x = field.get_x(x)
+                        HoloBall(x, 0)
+                        goal = True
                 else:
                     x, y = field.get_cell(*event.pos)
                     if (x, y) not in coords:
@@ -217,6 +221,8 @@ if __name__ == '__main__':
                     if x0 != x1 or y0 != y1:
                         moving = False
                         count = 0
+                    if goal:
+                        goal_confirmed = True
         draw_lines(coords)
         screen.fill((0, 0, 0))
         tiles.draw(screen)
@@ -231,10 +237,12 @@ if __name__ == '__main__':
                 # coords.clear()
                 for sprite in holoball_group:
                     holoball_group.remove(sprite)
+        if goal_confirmed:
+            field.clear()
+            ball.move(ball.default_x, ball.default_y)
         cross_group.draw(screen)
         ball_group.draw(screen)
         clock.tick(FPS)
         field.render(screen)
         pygame.display.flip()
     pygame.quit()
-print()
