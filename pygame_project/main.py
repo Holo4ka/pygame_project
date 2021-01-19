@@ -217,8 +217,7 @@ class Field:
 
     def on_click(self, coord):
         i, j = coord
-        if self.in_field(i * self.cell_size, j * self.cell_size):
-            self.field[j][i] = 1
+        self.field[j][i] = 1
 
     def clear(self):
         for i in range(self.width):
@@ -347,6 +346,7 @@ if __name__ == '__main__':
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                print(field.field)
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -441,7 +441,7 @@ if __name__ == '__main__':
             ballnow_x, ballnow_y = coords[-1]
             ball.move(ballnow_x, ballnow_y)
             for coord in coords:
-                if field.in_field(coord[0] * TILE_WIDTH + 1, coord[1] * TILE_HEIGHT + 1):
+                if 0 <= coord[0] <= field.width and 0 <= coord[1] - 1 <= field.height:
                     field.on_click((coord[0], coord[1] - 1))
             for sprite in holoball_group:
                 holoball_group.remove(sprite)
