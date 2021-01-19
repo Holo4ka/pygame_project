@@ -134,7 +134,6 @@ def create_firework(position):
 
 
 def check_movement(x_0, y_0, x, y):
-    y += 1
     return x_0 - 1 <= x <= x_0 + 1 and y_0 - 1 <= y <= y_0 + 1
 
 
@@ -218,7 +217,8 @@ class Field:
 
     def on_click(self, coord):
         i, j = coord
-        self.field[j][i] = 1
+        if self.in_field(i * self.cell_size, j * self.cell_size):
+            self.field[j][i] = 1
 
     def clear(self):
         for i in range(self.width):
@@ -333,11 +333,11 @@ if __name__ == '__main__':
     to_main_menu_btn = ToMainMenu(12, 1)
     score = Score(12, 4)
     restart_btn = Restart(12, 9)
-    x0, y0 = ball.default_pos
+    h_ball_x, h_ball_y = ball.default_pos
+    ballnow_x, ballnow_y = ball.default_pos
     count = 0
-    coords = []
+    coords = [(5, 6)]
     player_1, player_2 = 0, 0
-    match_count = 0
     running = True
     player_1_turn = True
     moving = True
@@ -354,51 +354,62 @@ if __name__ == '__main__':
                         x, y = event.pos
                         upper_gates = 91 <= x <= 240 and 0 <= y <= 30
                         lower_gates = 91 <= x <= 240 and 361 <= y <= 390
+                        movement_available = (check_movement(h_ball_x, h_ball_y, x // TILE_WIDTH,
+                                                             y // TILE_HEIGHT) and count < 3)
                         if upper_gates and count < 3:
-                            x = field.get_x(x)
-                            HoloBall(x, 0)
-                            count = 4
-                            goal_1 = True
+                            if movement_available:
+                                moving = True
+                                x = field.get_x(x)
+                                HoloBall(x, 0)
+                                h_ball_x, h_ball_y = x, 0
+                                coords.append((x, 0))
+                                count = 4
+                                goal_1 = True
                         elif lower_gates and count < 3:
-                            x = field.get_x(x)
-                            HoloBall(x, 12)
-                            count = 4
-                            goal_2 = True
+                            if movement_available:
+                                moving = True
+                                x = field.get_x(x)
+                                HoloBall(x, 12)
+                                h_ball_x, h_ball_y = x, 12
+                                coords.append((x, 12))
+                                count = 4
+                                goal_2 = True
                         else:
                             if 360 <= x <= 480 and 30 <= y <= 90:
-                                x0, y0 = ball.default_pos
-                                ball.move(x0, y0)
-                                goal_1, goal_2 = False, False
-                                goal_confirmed = False
-                                player_1_turn = True
-                                coords = []
+                                h_ball_x, h_ball_y = ball.default_pos
+                                ballnow_x, ballnow_y = ball.default_pos
                                 count = 0
-                                moving = True
+                                coords = [(5, 6)]
                                 player_1, player_2 = 0, 0
-                                field.clear()
-                                field.field[ball_x][ball_y - 1] = 1
+                                running = True
+                                player_1_turn = True
+                                moving = True
+                                goal_1 = False
+                                goal_2 = False
+                                goal_confirmed = False
                                 start_screen()
                             elif 360 <= x <= 480 and 270 <= y <= 330:
                                 field.clear()
                                 ball.move(ball.default_x, ball.default_y)
-                                coords.clear()
+                                coords = [(5, 6)]
                                 count = 0
-                                x0, y0 = ball.default_x, ball.default_y
+                                h_ball_x, h_ball_y = ball.default_pos
+                                ballnow_x, ballnow_y = ball.default_pos
                                 field.field[ball_x][ball_y - 1] = 1
                                 player_1_turn = True
                                 goal_1, goal_2, goal_confirmed = False, False, False
                     else:
                         x, y = field.get_cell(*event.pos)
-                        if (x, y) not in coords:
+                        if (x, y + 1) not in coords:
                             moving = True
-                            movement_avaliable = check_movement(x0, y0, x, y) and count < 3
-                            if movement_avaliable:
+                            movement_available = check_movement(h_ball_x, h_ball_y, x, y + 1) and count < 3
+                            if movement_available:
                                 HoloBall(x, y + 1)
-                                x0, y0 = x, y + 1
-                                coords.append((x, y))
+                                h_ball_x, h_ball_y = x, y + 1
+                                coords.append((x, y + 1))
                                 count += 1
                 elif event.button == 3:
-                    x0, y0 = ball.pos
+                    h_ball_x, h_ball_y = ball.pos
                     for sprite in holoball_group:
                         holoball_group.remove(sprite)
                     if not goal_1 and not goal_2:
@@ -411,31 +422,30 @@ if __name__ == '__main__':
                     count = 0
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    if count:
-                        x1, y1 = coords[-1]
-                        if x0 != x1 or y0 != y1:
-                            moving = False
-                            if player_1_turn:
-                                player_1_turn = False
-                            else:
-                                player_1_turn = True
-                            count = 0
-                        if goal_1 or goal_2:
-                            create_firework((x0 * TILE_WIDTH + 15, y0 * TILE_HEIGHT + 15))
-                            goal_confirmed = True
+                    x1, y1 = coords[-1]
+                    if ballnow_x != x1 or ballnow_y != y1:
+                        moving = False
+                        if player_1_turn:
+                            player_1_turn = False
+                        else:
+                            player_1_turn = True
+                        count = 0
+                    if goal_1 or goal_2:
+                        create_firework((h_ball_x * TILE_WIDTH + 15, h_ball_y * TILE_HEIGHT + 15))
+                        goal_confirmed = True
         star_group.update()
         SCREEN.fill((0, 0, 0))
         tiles.draw(SCREEN)
         if moving:
             holoball_group.draw(SCREEN)
         else:
-            if coords:
-                x_ball, y_ball = coords[-1]
-                ball.move(x_ball, y_ball + 1)
-                for coord in coords:
-                    field.on_click(coord)
-                for sprite in holoball_group:
-                    holoball_group.remove(sprite)
+            ballnow_x, ballnow_y = coords[-1]
+            ball.move(ballnow_x, ballnow_y)
+            for coord in coords:
+                if field.in_field(coord[0] * TILE_WIDTH + 1, coord[1] * TILE_HEIGHT + 1):
+                    field.on_click((coord[0], coord[1] - 1))
+            for sprite in holoball_group:
+                holoball_group.remove(sprite)
         if goal_confirmed:
             if goal_1:
                 player_2 += 1
@@ -443,9 +453,10 @@ if __name__ == '__main__':
                 player_1 += 1
             field.clear()
             ball.move(ball.default_x, ball.default_y)
-            coords.clear()
+            coords = [(5, 6)]
             count = 0
-            x0, y0 = ball.default_x, ball.default_y
+            h_ball_x, h_ball_y = ball.default_pos
+            ballnow_x, ballnow_y = ball.default_pos
             field.field[ball_x][ball_y - 1] = 1
             player_1_turn = True
             goal_1, goal_2, goal_confirmed = False, False, False
