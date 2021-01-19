@@ -381,7 +381,6 @@ if __name__ == '__main__':
                                 count = 0
                                 coords = [(5, 6)]
                                 player_1, player_2 = 0, 0
-                                running = True
                                 player_1_turn = True
                                 moving = True
                                 goal_1 = False
