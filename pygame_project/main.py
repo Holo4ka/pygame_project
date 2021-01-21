@@ -111,7 +111,7 @@ def rules_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                start_screen()
+                return
         pygame.display.flip()
         CLOCK.tick(FPS)
 
@@ -290,18 +290,18 @@ class Cross(pygame.sprite.Sprite):
             TILE_WIDTH * x + 1.5, TILE_HEIGHT * y + 1.5)
 
 
-class ToMainMenu(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__(tiles, all_sprites)
-        self.image = main_menu_image
-        self.rect = self.image.get_rect().move(TILE_WIDTH * x, TILE_HEIGHT * y)
+class Button(pygame.sprite.Sprite):
+    def __init__(self, type, x, y):
+        super().__init__(button_group, all_sprites)
+        self.image = button_images[type]
+        self.rect = self.image.get_rect().move(
+            TILE_WIDTH * x, TILE_HEIGHT * y)
+        self.type = type
 
-
-class Restart(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__(tiles, all_sprites)
-        self.image = restart_image
-        self.rect = self.image.get_rect().move(TILE_WIDTH * x, TILE_HEIGHT * y)
+    def get_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            return self.type
+        return ''
 
 
 tile_images = {
@@ -310,15 +310,19 @@ tile_images = {
     'lower_gates': load_image('lower_gates.png', -1),
     'cross': load_image('cross.png', -1)
 }
+button_images = {
+    'main_menu': load_image('to_main_menu.png', -1),
+    'restart': load_image('restart.png', -1),
+    'rules': load_image('rules.png', -1)
+}
 ball_image = load_image('ball.png', -1)
 holoball_image = load_image('holoball.png', -1)
 score_image = load_image('score.png', -1)
-main_menu_image = load_image('to_main_menu.png', -1)
-restart_image = load_image('restart.png', -1)
 all_sprites = pygame.sprite.Group()
 tiles = pygame.sprite.Group()
 ball_group = pygame.sprite.Group()
 holoball_group = pygame.sprite.Group()
+button_group = pygame.sprite.Group()
 cross_group = pygame.sprite.Group()
 star_group = pygame.sprite.Group()
 
@@ -329,9 +333,10 @@ if __name__ == '__main__':
     ball, ball_x, ball_y = generate_level(level_map)
     pygame.display.set_caption('Футбольчик')
     field = Field(11, 11, ball_x, ball_y - 1)
-    to_main_menu_btn = ToMainMenu(12, 1)
+    to_main_menu_btn = Button('main_menu', 12, 1)
+    restart_btn = Button('restart', 12, 9)
+    rules_btn = Button('rules', 12, 12)
     score = Score(12, 4)
-    restart_btn = Restart(12, 9)
     h_ball_x, h_ball_y = ball.default_pos
     ballnow_x, ballnow_y = ball.default_pos
     count = 0
@@ -346,7 +351,6 @@ if __name__ == '__main__':
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                print(field.field)
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -375,28 +379,35 @@ if __name__ == '__main__':
                                 count = 4
                                 goal_2 = True
                         else:
-                            if 360 <= x <= 480 and 30 <= y <= 90:
-                                h_ball_x, h_ball_y = ball.default_pos
-                                ballnow_x, ballnow_y = ball.default_pos
-                                count = 0
-                                coords = [(5, 6)]
-                                player_1, player_2 = 0, 0
-                                player_1_turn = True
-                                moving = True
-                                goal_1 = False
-                                goal_2 = False
-                                goal_confirmed = False
-                                start_screen()
-                            elif 360 <= x <= 480 and 270 <= y <= 330:
-                                field.clear()
-                                ball.move(ball.default_x, ball.default_y)
-                                coords = [(5, 6)]
-                                count = 0
-                                h_ball_x, h_ball_y = ball.default_pos
-                                ballnow_x, ballnow_y = ball.default_pos
-                                field.field[ball_x][ball_y - 1] = 1
-                                player_1_turn = True
-                                goal_1, goal_2, goal_confirmed = False, False, False
+                            for btn in button_group:
+                                type = btn.get_event(event)
+                                if type:
+                                    break
+                            if type:
+                                if type == 'main_menu':
+                                    h_ball_x, h_ball_y = ball.default_pos
+                                    ballnow_x, ballnow_y = ball.default_pos
+                                    count = 0
+                                    coords = [(5, 6)]
+                                    player_1, player_2 = 0, 0
+                                    player_1_turn = True
+                                    moving = True
+                                    goal_1 = False
+                                    goal_2 = False
+                                    goal_confirmed = False
+                                    start_screen()
+                                elif type == 'restart':
+                                    field.clear()
+                                    ball.move(ball.default_x, ball.default_y)
+                                    coords = [(5, 6)]
+                                    count = 0
+                                    h_ball_x, h_ball_y = ball.default_pos
+                                    ballnow_x, ballnow_y = ball.default_pos
+                                    field.field[ball_x][ball_y - 1] = 1
+                                    player_1_turn = True
+                                    goal_1, goal_2, goal_confirmed = False, False, False
+                                elif type == 'rules':
+                                    rules_screen()
                     else:
                         x, y = field.get_cell(*event.pos)
                         if (x, y + 1) not in coords:
@@ -435,6 +446,7 @@ if __name__ == '__main__':
         star_group.update()
         SCREEN.fill((0, 0, 0))
         tiles.draw(SCREEN)
+        button_group.draw(SCREEN)
         if moving:
             holoball_group.draw(SCREEN)
         else:
