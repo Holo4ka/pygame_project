@@ -71,8 +71,6 @@ def start_screen():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if 302 <= event.pos[0] <= 421 and 287 <= event.pos[1] <= 325:
                     return
-                elif 302 <= event.pos[0] <= 421 and 336 <= event.pos[1] <= 374:
-                    rules_screen()
         pygame.display.flip()
         CLOCK.tick(FPS)
 
@@ -217,7 +215,8 @@ class Field:
 
     def on_click(self, coord):
         i, j = coord
-        self.field[j][i] = 1
+        if i < 11 and j < 11:
+            self.field[j][i] = 1
 
     def clear(self):
         for i in range(self.width):
